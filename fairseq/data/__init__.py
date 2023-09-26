@@ -4,6 +4,10 @@
 # LICENSE file in the root directory of this source tree.
 """isort:skip_file"""
 
+##### MY DATASET #####
+from .audio.efficient_hubert_dataset import EfficientHubertDataset
+##### MY DATASET #####
+
 from .dictionary import Dictionary, TruncatedDictionary
 
 from .fairseq_dataset import FairseqDataset, FairseqIterableDataset
@@ -73,6 +77,7 @@ from .iterators import (
 )
 
 __all__ = [
+    "EfficientHubertDataset",
     "AddTargetDataset",
     "AppendTokenDataset",
     "BacktranslationDataset",
