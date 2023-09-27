@@ -6,23 +6,27 @@
 # can be found in the PATENTS file in the same directory.
 
 import logging
+import os
+import sys
+from typing import Dict, List, Optional, Tuple
 
-from typing import List, Optional
+import numpy as np
 
 from dataclasses import dataclass, field
 from fairseq.data import Dictionary, HubertDataset
 from fairseq.dataclass.configs import FairseqDataclass
 from fairseq.tasks import register_task
+from fairseq.tasks.fairseq_task import FairseqTask
 from omegaconf import MISSING
 
 ##### MT IMPORT #####
 from collections import OrderedDict
 from fairseq.data import EfficientHubertDataset
 
-from fairseq.tasks.hubert_pretraining import (
-    HubertPretrainingTask,
-    HubertPretrainingConfig
-)
+# from fairseq.tasks.hubert_pretraining import (
+#     HubertPretrainingTask,
+#     HubertPretrainingConfig
+# )
 # from fairseq.data import MultiCorpusDataset
 
 logger = logging.getLogger(__name__)
@@ -44,7 +48,7 @@ class LabelEncoder(object):
 class EfficientHubertPretrainingConfig(FairseqDataclass):
     data: str = field(default=MISSING, metadata={"help": "path to data directory"})
     fine_tuning: bool = field(
-        default=False, metadata={"help": "set to true if fine-tuning Hubert"}
+        default=False, metadata={"help": "set to true if fine-tuning EfficientHubert"}
     )
     labels: List[str] = field(
         default_factory=lambda: ["ltr"],
@@ -114,14 +118,59 @@ class EfficientHubertPretrainingConfig(FairseqDataclass):
     )
 
 @register_task("efficient_hubert_pretraining", dataclass=EfficientHubertPretrainingConfig)
-class EfficientHubertPretrainingTask(HubertPretrainingTask):
+class EfficientHubertPretrainingTask(FairseqTask):
+
     cfg: EfficientHubertPretrainingConfig
+
     def __init__(
         self,
         cfg: EfficientHubertPretrainingConfig,
     ) -> None:
         super().__init__(cfg)
+        
+        logger.info(f"current directory is {os.getcwd()}")
+        logger.info(f"EfficientHubertPretrainingTask Config {cfg}")
+
         self.cfg = cfg
+        self.fine_tuning = cfg.fine_tuning
+
+        if cfg.fine_tuning:
+            self.state.add_factory("target_dictionary", self.load_dictionaries)
+        else:
+            self.state.add_factory("dictionaries", self.load_dictionaries)
+
+        self.blank_symbol = "<s>"
+
+    @property
+    def source_dictionary(self) -> Optional[Dictionary]:
+        return None
+
+    @property
+    def target_dictionary(self) -> Optional[Dictionary]:
+        return self.state.target_dictionary
+
+    @property
+    def dictionaries(self) -> List[Dictionary]:
+        return self.state.dictionaries
+
+    @classmethod
+    def setup_task(
+        cls, cfg: EfficientHubertPretrainingConfig, **kwargs
+    ) -> "EfficientHubertPretrainingTask":
+        return cls(cfg)
+
+    def load_dictionaries(self):
+        label_dir = self.cfg.data if self.cfg.label_dir is None else self.cfg.label_dir
+        dictionaries = [
+            Dictionary.load(f"{label_dir}/dict.{label}.txt")
+            for label in self.cfg.labels
+        ]
+        return dictionaries[0] if self.cfg.fine_tuning else dictionaries
+
+    def get_label_dir(self) -> str:
+        if self.cfg.label_dir is None:
+            return self.cfg.data
+        return self.cfg.label_dir
 
 
     def load_dataset(self, split: str, **kwargs) -> None:
@@ -188,3 +237,10 @@ class EfficientHubertPretrainingTask(HubertPretrainingTask):
                 random_crop=self.cfg.random_crop,
                 single_target=self.cfg.single_target,
             )
+
+    
+    def max_positions(self) -> Tuple[int, int]:
+        return (sys.maxsize, sys.maxsize)
+
+    def filter_indices_by_size(self, indices: np.array, *args, **kwargs) -> np.array:
+        return indices

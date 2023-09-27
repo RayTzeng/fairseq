@@ -336,7 +336,7 @@ class EfficientHubertModel(BaseFairseqModel):
                 # nn_index = unravel_indices(nn_index.view(-1), labeled_features.shape[:2])
                 target_list[0][unlabeled_masked_indices] = labeled_phone_label[nn_index]
                 
-                del dist
+                # del dist
 
                 # print("Finish!")
                 #####
@@ -369,7 +369,7 @@ class EfficientHubertModel(BaseFairseqModel):
             unlabeled_nomask_features = x[unlabeled_nomask_indices]
             # print(f"{unlabeled_nomask_features.size(0)} unlabeled frames needs to find Nearest labeled frame")
 
-            if unlabeled_masked_features.size(0) != 0:
+            if unlabeled_nomask_features.size(0) != 0:
                 dist = cos(unlabeled_nomask_features.unsqueeze(1), labeled_features.unsqueeze(0))
                 dist = dist.view(dist.size(0), -1)
                 # print(f"minimum similarity: {dist.min()}")
