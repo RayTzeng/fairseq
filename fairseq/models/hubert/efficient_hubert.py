@@ -326,8 +326,8 @@ class EfficientHubertModel(BaseFairseqModel):
             # print(f"{unlabeled_masked_features.size(0)} unlabeled frames needs to find Nearest labeled frame")
 
             if unlabeled_masked_features.size(0) != 0:
-                dist = cos(unlabeled_masked_features.unsqueeze(1), labeled_features.unsqueeze(0))
-                dist = dist.view(dist.size(0), -1)
+                dist = cos(unlabeled_masked_features.unsqueeze(1), labeled_features.unsqueeze(0)).detach()
+                dist = dist.view(dist.size(0), -1).detach()
                 # print(f"minimum distance: {dist.min()}")
                 # print(f"maximum distance: {dist.max()}")
 
@@ -370,8 +370,8 @@ class EfficientHubertModel(BaseFairseqModel):
             # print(f"{unlabeled_nomask_features.size(0)} unlabeled frames needs to find Nearest labeled frame")
 
             if unlabeled_nomask_features.size(0) != 0:
-                dist = cos(unlabeled_nomask_features.unsqueeze(1), labeled_features.unsqueeze(0))
-                dist = dist.view(dist.size(0), -1)
+                dist = cos(unlabeled_nomask_features.unsqueeze(1), labeled_features.unsqueeze(0)).detach()
+                dist = dist.view(dist.size(0), -1).detach()
                 # print(f"minimum similarity: {dist.min()}")
                 # print(f"maximum similarity: {dist.max()}")
 
